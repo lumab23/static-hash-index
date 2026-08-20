@@ -20,6 +20,23 @@ uvicorn app.main:app --reload
 A API ficará disponível em `http://127.0.0.1:8000`. A documentação interativa
 estará em `/docs` e o endpoint de diagnóstico em `/api/health`.
 
+## Dataset de palavras
+
+O projeto usa a lista pública [dwyl/english-words](https://github.com/dwyl/english-words).
+Baixe `words.txt` e salve-o em `data/words.txt` na raiz do projeto. Essa é a lista
+com aproximadamente 466 mil registros mencionada no enunciado. O diretório
+`data/` é ignorado pelo Git para evitar versionar o dataset externo.
+
+Com a API em execução, carregue o arquivo definindo também o tamanho da página:
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/data/load \
+  -F 'file=@../data/words.txt' \
+  -F 'page_size=100'
+```
+
+O resumo corrente pode ser consultado em `GET /api/pages/summary`.
+
 ## Testes
 
 ```bash
