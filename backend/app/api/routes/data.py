@@ -43,3 +43,14 @@ async def load_data(
 @router.get("/pages/summary")
 def pages_summary() -> dict[str, object]:
     return get_page_manager().summary()
+
+
+@router.get("/pages/{page_id}")
+def get_page(page_id: int) -> dict:
+    try:
+        return get_page_manager().get_page(page_id).to_dict()
+    except DataValidationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
