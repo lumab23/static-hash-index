@@ -37,6 +37,14 @@ curl -X POST http://127.0.0.1:8000/api/data/load \
 
 O resumo corrente pode ser consultado em `GET /api/pages/summary`.
 
+## Contrato com a construção do índice
+
+Depois de construir um `HashIndex`, a rota de construção deve registrá-lo com
+`set_hash_index(index)`, de `app.api.routes.index_search`. A busca depende dos
+métodos `bucket_id_for(key)` e `get_bucket(bucket_id)`, e cada bucket deve expor
+`find(key)`. O carregamento de um novo TXT invalida automaticamente o índice
+anterior para impedir buscas em páginas desatualizadas.
+
 ## Testes
 
 ```bash

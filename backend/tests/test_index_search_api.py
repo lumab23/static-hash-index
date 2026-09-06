@@ -17,19 +17,24 @@ class FakeEntry:
 
 
 class FakeBucket:
-    def __init__(self, entries: list[FakeEntry]) -> None:
+    def __init__(
+        self,
+        entries: list[FakeEntry],
+        overflow: list[FakeEntry] | None = None,
+    ) -> None:
         self.entries = entries
+        self.overflow = overflow or []
 
     def find(self, key: str) -> FakeEntry | None:
-        for entry in self.entries:
+        for entry in self.entries + self.overflow:
             if entry.key == key:
                 return entry
         return None
 
 
 class FakeIndex:
-    def __init__(self) -> None:
-        self.bucket = FakeBucket([FakeEntry("beta", 0)])
+    def __init__(self, bucket: FakeBucket | None = None) -> None:
+        self.bucket = bucket or FakeBucket([FakeEntry("beta", 0)])
 
     def bucket_id_for(self, key: str) -> int:
         return 3
@@ -71,6 +76,40 @@ def test_search_endpoint_returns_indexed_result() -> None:
 def test_search_endpoint_requires_built_index() -> None:
     load_pages()
 
+    response = client.post("/api/search/index", json={"key": "beta"})
+
+    assert response.status_code == 409
+    assert response.json() == {"detail": "O índice ainda não foi construído."}
+
+
+def test_search_endpoint_finds_key_in_overflow() -> None:
+    load_pages()
+    set_hash_index(FakeIndex(FakeBucket([], [FakeEntry("beta", 0)])))
+
+    response = client.post("/api/search/index", json={"key": "beta"})
+
+    assert response.status_code == 200
+    assert response.json()["found"] is True
+    assert response.json()["page_id"] == 0
+
+
+def test_search_endpoint_reports_missing_key() -> None:
+    load_pages()
+    set_hash_index(FakeIndex())
+
+    response = client.post("/api/search/index", json={"key": "missing"})
+
+    assert response.status_code == 200
+    assert response.json()["found"] is False
+    assert response.json()["page_id"] is None
+    assert response.json()["pages_read"] == 0
+
+
+def test_loading_new_data_invalidates_previous_index() -> None:
+    load_pages()
+    set_hash_index(FakeIndex())
+
+    load_pages()
     response = client.post("/api/search/index", json={"key": "beta"})
 
     assert response.status_code == 409

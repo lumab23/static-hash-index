@@ -1,14 +1,12 @@
-from typing import Any
-
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, field_validator
 
 from app.api.routes.data import get_page_manager
+from app.core.index_state import get_current_index, set_current_index
 from app.core.search import SearchIndex, search_by_index
 
 
 router = APIRouter(tags=["search"])
-_hash_index: SearchIndex | None = None
 
 
 class IndexSearchRequest(BaseModel):
@@ -23,25 +21,36 @@ class IndexSearchRequest(BaseModel):
         return key
 
 
+class IndexSearchResponse(BaseModel):
+    found: bool
+    key: str
+    bucket_id: int
+    page_id: int | None
+    pages_read: int
+    elapsed_time: float
+    trace: list[str]
+
+
 def set_hash_index(index: SearchIndex | None) -> None:
-    global _hash_index
-    _hash_index = index
+    """Mantém o contrato usado pela futura rota de construção do índice."""
+    set_current_index(index)
 
 
 def get_hash_index() -> SearchIndex:
-    if _hash_index is None:
+    index = get_current_index()
+    if index is None:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="O índice ainda não foi construído.",
         )
-    return _hash_index
+    return index
 
 
-@router.post("/search/index")
-def index_search(request: IndexSearchRequest) -> dict[str, Any]:
+@router.post("/search/index", response_model=IndexSearchResponse)
+def index_search(request: IndexSearchRequest) -> IndexSearchResponse:
     result = search_by_index(
         request.key,
         get_hash_index(),
         get_page_manager(),
     )
-    return result.to_dict()
+    return IndexSearchResponse.model_validate(result.to_dict())
