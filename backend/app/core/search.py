@@ -43,7 +43,11 @@ def search_by_index(
     bucket_id = index.bucket_id_for(key)
     bucket = index.get_bucket(bucket_id)
     entry = bucket.find(key)
-    trace = [f"Chave '{key}'", f"Bucket {bucket_id}"]
+    trace = [
+        f"Chave '{key}'",
+        "Função hash calculada",
+        f"Bucket {bucket_id}",
+    ]
 
     if entry is None:
         trace.append("Chave não encontrada no bucket")

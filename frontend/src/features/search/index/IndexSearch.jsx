@@ -54,10 +54,14 @@ function IndexSearch({ search = searchByIndex }) {
         </button>
       </form>
 
-      {error && <p className="text-sm text-red-400">{error}</p>}
+      {error && (
+        <p aria-live="polite" className="text-sm text-red-400" role="alert">
+          {error}
+        </p>
+      )}
 
       {result && (
-        <div className="space-y-4">
+        <div aria-live="polite" className="space-y-4">
           <p className={result.found ? 'text-emerald-400' : 'text-amber-400'}>
             {result.found ? 'Chave encontrada' : 'Chave não encontrada'}
           </p>
@@ -72,13 +76,17 @@ function IndexSearch({ search = searchByIndex }) {
             Tempo: {(result.elapsed_time * 1000).toFixed(4)} ms
           </p>
 
-          <ol className="flex flex-wrap items-center gap-2 text-sm">
-            {result.trace.map((step) => (
-              <li className="rounded-full bg-slate-800 px-3 py-1" key={step}>
-                {step}
-              </li>
-            ))}
-          </ol>
+          <div className="space-y-2">
+            <h3 className="text-sm font-medium text-slate-300">Caminho da busca</h3>
+            <ol className="flex flex-wrap items-center gap-2 text-sm">
+              {result.trace.map((step, index) => (
+                <li className="flex items-center gap-2" key={`${index}-${step}`}>
+                  {index > 0 && <span className="text-cyan-400">→</span>}
+                  <span className="rounded-full bg-slate-800 px-3 py-1">{step}</span>
+                </li>
+              ))}
+            </ol>
+          </div>
         </div>
       )}
     </section>

@@ -1,5 +1,6 @@
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile, status
 
+from app.core.index_state import set_current_index
 from app.core.pages import DataValidationError, PageManager
 
 
@@ -30,13 +31,16 @@ async def load_data(
         )
 
     try:
-        _page_manager = PageManager.from_txt(await file.read(), page_size)
+        page_manager = PageManager.from_txt(await file.read(), page_size)
     except DataValidationError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(exc),
         ) from exc
 
+    _page_manager = page_manager
+    # Um índice construído para outro conjunto de páginas não pode ser reutilizado.
+    set_current_index(None)
     return _page_manager.summary()
 
 

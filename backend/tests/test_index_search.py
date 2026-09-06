@@ -41,7 +41,7 @@ def make_index() -> FakeIndex:
     return FakeIndex(
         [
             FakeBucket([], [FakeEntry("lambda", 1)]),
-            FakeBucket([FakeEntry("beta", 0)]),
+            FakeBucket([FakeEntry("beta", 0), FakeEntry("zeta", 2)]),
             FakeBucket([]),
         ]
     )
@@ -69,6 +69,31 @@ def test_finds_key_stored_in_overflow() -> None:
     assert result.bucket_id == 0
     assert result.page_id == 1
     assert result.pages_read == 1
+
+
+def test_finds_key_on_last_page() -> None:
+    pages = PageManager(["alpha", "beta", "gamma", "lambda", "eta", "zeta"], 2)
+
+    result = search_by_index("zeta", make_index(), pages)
+
+    assert result.found is True
+    assert result.bucket_id == 1
+    assert result.page_id == 2
+    assert result.pages_read == 1
+
+
+def test_trace_describes_key_hash_bucket_and_page_path() -> None:
+    pages = PageManager(["alpha", "beta"], 2)
+
+    result = search_by_index("beta", make_index(), pages)
+
+    assert result.trace == [
+        "Chave 'beta'",
+        "Função hash calculada",
+        "Bucket 1",
+        "Página 0",
+        "Chave confirmada",
+    ]
 
 
 def test_reports_missing_key_without_reading_data_page() -> None:
