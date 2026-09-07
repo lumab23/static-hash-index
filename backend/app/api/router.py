@@ -3,6 +3,7 @@ from fastapi import APIRouter
 from app.api.routes.data import router as data_router
 from app.api.routes.health import router as health_router
 from app.api.routes.index_bucket import router as index_bucket_router
+from app.api.routes.index_build import router as index_build_router
 from app.api.routes.index_search import router as index_search_router
 from app.api.routes.index_summary import router as index_summary_router
 
@@ -13,3 +14,4 @@ api_router.include_router(data_router)
 api_router.include_router(index_search_router)
 api_router.include_router(index_summary_router)
 api_router.include_router(index_bucket_router)
+api_router.include_router(index_build_router)
