@@ -56,3 +56,24 @@ pytest
 - `app/api/`: endpoints e contratos HTTP.
 - `app/core/`: páginas, índice, buscas e métricas.
 - `tests/`: testes automatizados.
+
+### Visualização de hash e overflow
+
+`GET /api/index/hash-overflow?key=banana` consulta o índice atual, sem inserir
+registros ou confirmar a existência da chave. Retorna `key`, `bucket_id`,
+`bucket_capacity`, `bucket_occupancy` (entradas na área primária) e
+`overflow_entries` (chaves de todos os blocos de overflow desse bucket, em ordem).
+A chave é preservada exatamente como recebida; chaves vazias ou apenas com
+espaços retornam 422. Sem índice construído, retorna 409.
+
+As métricas são globais e reiniciadas a cada construção:
+
+- `collision_count`: inserções que encontraram a área primária cheia.
+- `collision_rate`: `collision_count / total_indexed * 100`, ou zero sem entradas.
+- `overflow_bucket_count`: quantidade de buckets primários com overflow,
+  independentemente do número de blocos encadeados.
+- `overflow_rate`: `overflow_bucket_count / NB * 100`.
+
+O valor de hash exibido é o próprio endereço `bucket_id`, calculado pela
+`hash_function.py` existente. No frontend, construa o índice no painel existente
+e use “Consultar hash”; uma reconstrução limpa a consulta anterior.
