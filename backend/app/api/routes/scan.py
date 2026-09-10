@@ -52,7 +52,7 @@ def run_comparison(
     page_manager: PageManager = Depends(get_page_manager),
 ) -> ComparisonMetrics:
     """
-    Consolida e compara os resultados do Table Scan com a Busca Indexada da Luma.
+    Consolida e compara os resultados do Table Scan com a busca indexada.
     """
     index_result = search_by_index(payload.key, get_hash_index(), page_manager)
     scan_result = execute_table_scan(page_manager.pages, payload.key)

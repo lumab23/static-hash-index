@@ -1,1 +1,61 @@
 @import "tailwindcss";
+
+@layer base {
+  :root {
+    color: #1f2937;
+    background: #f7f8fc;
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    min-width: 320px;
+    min-height: 100vh;
+    margin: 0;
+    background: #f7f8fc;
+  }
+
+  button,
+  input {
+    font: inherit;
+  }
+}
+
+@layer components {
+  .app-panel {
+    @apply min-w-0 rounded-2xl border border-slate-200 bg-white p-4 text-slate-800 sm:p-6;
+  }
+
+  .app-subpanel {
+    @apply rounded-xl border border-slate-200 bg-slate-50/70 p-4;
+  }
+
+  .app-input {
+    @apply w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-slate-800 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-400 focus:ring-3 focus:ring-indigo-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500;
+  }
+
+  .app-button-primary {
+    @apply inline-flex min-h-11 items-center justify-center rounded-lg bg-indigo-600 px-4 py-2.5 text-center font-medium text-white transition hover:bg-indigo-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500;
+  }
+
+  .app-button-secondary {
+    @apply inline-flex min-h-11 items-center justify-center rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-2.5 text-center font-medium text-indigo-700 transition hover:border-indigo-300 hover:bg-indigo-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400;
+  }
+
+  .app-message-info {
+    @apply rounded-lg border border-blue-200 bg-blue-50 px-3.5 py-3 text-sm text-blue-800;
+  }
+
+  .app-message-success {
+    @apply rounded-lg border border-emerald-200 bg-emerald-50 px-3.5 py-3 text-sm text-emerald-800;
+  }
+
+  .app-message-warning {
+    @apply rounded-lg border border-amber-200 bg-amber-50 px-3.5 py-3 text-sm text-amber-800;
+  }
+
+  .app-message-error {
+    @apply rounded-lg border border-red-200 bg-red-50 px-3.5 py-3 text-sm text-red-800;
+  }
+}

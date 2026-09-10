@@ -20,7 +20,7 @@ class TableScanResult(BaseModel):
 
 class ComparisonMetrics(BaseModel):
     """
-    Estrutura consolidada para comparar a Busca Indexada (Luma) vs Table Scan (Bianca).
+    Estrutura consolidada para comparar a busca indexada com o Table Scan.
     """
     key: str
     table_scan: TableScanResult

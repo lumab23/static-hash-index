@@ -1,8 +1,9 @@
 import { useState } from 'react'
 
+import MetricCard from '../../components/MetricCard.jsx'
 import { getHashOverflow } from './hashApi.js'
 
-function HashOverflow() {
+function HashOverflow({ disabled = false }) {
   const [key, setKey] = useState('')
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -12,6 +13,10 @@ function HashOverflow() {
     event.preventDefault()
     setData(null)
     setError('')
+    if (disabled) {
+      setError('Construa o índice antes de consultar hash e overflow.')
+      return
+    }
     if (!key.trim()) {
       setError('Informe uma chave.')
       return
@@ -27,55 +32,49 @@ function HashOverflow() {
   }
 
   return (
-    <section className="space-y-5 rounded-2xl bg-slate-900 p-6" aria-labelledby="hash-heading">
-      <h2 id="hash-heading" className="text-xl font-semibold">Hash, Colisão e Overflow</h2>
-      <p className="text-sm text-slate-400">Consulte o bucket de uma chave no índice construído. A consulta não insere registros nem confirma a presença da chave.</p>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-3 sm:flex-row sm:items-end">
+    <article className="app-panel space-y-5" aria-labelledby="hash-heading">
+      <div>
+        <h3 id="hash-heading" className="text-lg font-semibold text-slate-900">Hash, colisão e overflow</h3>
+        <p className="mt-1 text-sm leading-6 text-slate-600">Veja a distribuição de uma chave sem executar uma busca nos registros.</p>
+      </div>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-3 md:flex-row md:items-end">
         <div className="flex-1 space-y-2">
-          <label htmlFor="hash-key" className="block text-sm">Chave</label>
-          <input id="hash-key" value={key} required disabled={loading}
+          <label htmlFor="hash-key" className="block text-sm font-medium text-slate-700">Chave</label>
+          <input id="hash-key" value={key} required disabled={disabled || loading}
             onChange={event => { setKey(event.target.value); setData(null); setError('') }}
-            className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-2 focus-visible:outline-2 focus-visible:outline-cyan-400" />
+            className="app-input" />
         </div>
-        <button type="submit" disabled={loading}
-          className="rounded-lg bg-cyan-400 px-4 py-2 font-medium text-slate-950 focus-visible:outline-2 focus-visible:outline-cyan-300 disabled:opacity-50">
-          Consultar hash
+        <button type="submit" disabled={disabled || loading}
+          className="app-button-primary w-full md:w-auto">
+          {loading ? 'Consultando...' : 'Consultar hash'}
         </button>
       </form>
-      {loading && <p role="status">Consultando hash...</p>}
-      {error && <p role="alert" className="text-red-300">{error}</p>}
+      {disabled && <p className="app-message-warning">Consulta bloqueada até a construção do índice.</p>}
+      {loading && <p role="status" className="app-message-info">Consultando hash...</p>}
+      {error && <p role="alert" className="app-message-error">{error}</p>}
       {data && (
         <div className="space-y-5" aria-live="polite">
-          <div>
-            <h3 className="font-semibold">Cálculo do Hash</h3>
-            <p className="break-all">Chave: <strong>{data.key}</strong></p>
-            <p>hash(chave) = <strong>{data.bucket_id}</strong></p>
-            <p>Bucket escolhido: <strong>{data.bucket_id}</strong></p>
+          <p className="break-all text-sm text-slate-600">Chave consultada: <strong className="text-slate-900">{data.key}</strong></p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <MetricCard label="Bucket calculado" value={data.bucket_id} tone="indigo" />
+            <MetricCard label="Ocupação principal" value={`${data.bucket_occupancy} / ${data.bucket_capacity}`} />
+            <MetricCard label="Total de colisões" value={data.collision_count} />
+            <MetricCard label="Taxa de colisão" value={`${data.collision_rate.toFixed(2)}%`} />
+            <MetricCard label="Buckets com overflow" value={data.overflow_bucket_count} tone="teal" />
+            <MetricCard label="Taxa de overflow" value={`${data.overflow_rate.toFixed(2)}%`} tone="teal" />
           </div>
-          <div>
-            <h3 className="font-semibold">Ocupação do Bucket</h3>
-            <p>{data.bucket_occupancy} / {data.bucket_capacity}</p>
-            {data.bucket_occupancy === data.bucket_capacity && <p className="text-amber-300">Bucket primário cheio</p>}
-          </div>
-          <div>
-            <h3 className="font-semibold">Colisões no índice</h3>
-            <p>Inserções que encontraram o bucket primário cheio: {data.collision_count}</p>
-            <p>Taxa sobre o total de entradas: {data.collision_rate.toFixed(2)}%</p>
-          </div>
-          <div>
-            <h3 className="font-semibold">Overflow no índice</h3>
-            <p>Buckets com overflow: {data.overflow_bucket_count}</p>
-            <p>Taxa sobre o total de buckets: {data.overflow_rate.toFixed(2)}%</p>
-            <h4 className="mt-3 font-medium">Entradas de overflow do bucket {data.bucket_id}</h4>
+          {data.bucket_occupancy === data.bucket_capacity && <p className="app-message-warning">O bucket primário está cheio.</p>}
+          <div className="app-subpanel space-y-2">
+            <h4 className="font-medium text-slate-800">Entradas adicionais do bucket {data.bucket_id}</h4>
             {data.overflow_entries.length ? (
-              <ul className="list-inside list-disc break-all">
+              <ul className="max-h-52 list-inside list-disc overflow-auto break-all text-sm text-slate-700">
                 {data.overflow_entries.map((entry, position) => <li key={position}>{entry}</li>)}
               </ul>
-            ) : <p>Este bucket não possui entradas em overflow.</p>}
+            ) : <p className="text-sm text-slate-500">Este bucket não possui entradas adicionais.</p>}
           </div>
         </div>
       )}
-    </section>
+    </article>
   )
 }
 

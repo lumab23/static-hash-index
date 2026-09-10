@@ -18,14 +18,33 @@ static-hash-index/
 │   ├── app/
 │   ├── tests/
 │   ├── pyproject.toml
-│   ├── src/
-│   ├── package.json
 │   └── README.md
 ├── frontend/
+│   ├── src/
+│   ├── tests/
+│   ├── package.json
 │   └── README.md
 ├── .gitignore
 └── README.md
 ```
 
-As fundações do backend e do frontend estão prontas para o desenvolvimento das
-funcionalidades.
+
+## Execução local
+
+Em um terminal:
+
+```bash
+cd backend
+source .venv/bin/activate
+uvicorn app.main:app --reload
+```
+
+Em outro terminal:
+
+```bash
+cd frontend
+npm run dev
+```
+
+Abra `http://127.0.0.1:5173`. O Vite encaminha as chamadas `/api` para o
+FastAPI em `http://127.0.0.1:8000`.

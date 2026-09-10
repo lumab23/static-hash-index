@@ -36,14 +36,18 @@ curl -X POST http://127.0.0.1:8000/api/data/load \
 ```
 
 O resumo corrente pode ser consultado em `GET /api/pages/summary`.
+Para visualizar uma página sem devolver todos os seus registros, use
+`GET /api/pages/{id}/records?offset=0&limit=100`. O limite máximo é 100.
 
 ## Contrato com a construção do índice
 
-Depois de construir um `HashIndex`, a rota de construção deve registrá-lo com
-`set_hash_index(index)`, de `app.api.routes.index_search`. A busca depende dos
-métodos `bucket_id_for(key)` e `get_bucket(bucket_id)`, e cada bucket deve expor
-`find(key)`. O carregamento de um novo TXT invalida automaticamente o índice
-anterior para impedir buscas em páginas desatualizadas.
+A rota `POST /api/index/build` constrói um `HashIndex` a partir das páginas
+carregadas e o registra no estado compartilhado com `set_current_index(index)`.
+A busca indexada depende dos métodos `bucket_id_for(key)` e
+`get_bucket(bucket_id)`, e cada bucket expõe `find(key)`. O carregamento de um
+novo TXT invalida automaticamente o índice anterior para impedir buscas em
+páginas desatualizadas. Por isso, depois de trocar o arquivo, é obrigatório
+construir um novo índice antes de realizar buscas indexadas ou comparações.
 
 ## Testes
 
@@ -96,3 +100,16 @@ As métricas de comparação seguem estas convenções:
 - `speedup_factor`: tempo do scan dividido pelo tempo da busca indexada.
 - `results_agree`: informa se as duas estratégias concordam sobre a existência
   da chave.
+
+## Teste de escala reproduzível
+
+O dataset grande não é versionado. Gere e execute o fluxo completo com:
+
+```bash
+python scripts/generate_scale_data.py /tmp/static-hash-scale.txt --records 466550
+python scripts/run_scale_test.py /tmp/static-hash-scale.txt --page-size 100 --fr 100
+```
+
+O teste mede upload/processamento, construção e buscas inicial, intermediária,
+final e inexistente. Também valida totais, primeira/última página, consulta
+paginada limitada a 100 registros e invalidação do índice após um novo upload.
