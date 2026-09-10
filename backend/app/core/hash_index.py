@@ -37,6 +37,8 @@ class HashIndex:
         self.nb = 0
         self.buckets: list[Bucket] = []
         self.total_indexed = 0
+        self.collision_count = 0
+        self.overflow_bucket_count = 0
         self.build_time = 0.0
         self._hash_function = hash_function
         self._overflow_factory = overflow_factory
@@ -50,19 +52,51 @@ class HashIndex:
             for bucket_id in range(nb)
         ]
         total_indexed = 0
+        collision_count = 0
+        overflow_bucket_count = 0
 
         for page in pages:
             for key in page.records:
                 entry = IndexEntry(key=key, page_id=page.id)
                 bucket_id = self._bucket_id_for(key, nb)
-                buckets[bucket_id].add(entry)
+                bucket = buckets[bucket_id]
+                if bucket.is_full():
+                    collision_count += 1
+                    if bucket.overflow is None:
+                        overflow_bucket_count += 1
+                bucket.add(entry)
                 total_indexed += 1
 
         build_time = perf_counter() - started_at
         self.nb = nb
         self.buckets = buckets
         self.total_indexed = total_indexed
+        self.collision_count = collision_count
+        self.overflow_bucket_count = overflow_bucket_count
         self.build_time = build_time
+
+    def hash_overflow_details(self, key: str) -> dict[str, object]:
+        """Consulta o bucket da chave e as taxas globais em porcentagem."""
+        bucket = self.get_bucket(self.bucket_id_for(key))
+        overflow_entries = []
+        block = bucket.overflow
+        while block is not None:
+            overflow_entries.extend(entry.key for entry in block.entries)
+            block = block.next
+        return {
+            "key": key,
+            "bucket_id": bucket.id,
+            "bucket_capacity": bucket.capacity,
+            "bucket_occupancy": len(bucket.entries),
+            "collision_count": self.collision_count,
+            "collision_rate": (
+                self.collision_count / self.total_indexed * 100
+                if self.total_indexed else 0.0
+            ),
+            "overflow_bucket_count": self.overflow_bucket_count,
+            "overflow_rate": self.overflow_bucket_count / self.nb * 100,
+            "overflow_entries": overflow_entries,
+        }
 
     def bucket_id_for(self, key: str) -> int:
         self._require_built()

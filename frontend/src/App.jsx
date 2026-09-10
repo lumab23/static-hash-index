@@ -1,6 +1,7 @@
 import { useState } from 'react'
 
 import IndexPanel from './features/index/IndexPanel.jsx'
+import HashOverflow from './features/hash/HashOverflow.jsx'
 import IndexSearch from './features/search/index/IndexSearch.jsx'
 
 function App() {
@@ -11,6 +12,7 @@ function App() {
         <h1 className="text-3xl font-semibold">Índice Hash Estático</h1>
         <IndexPanel onIndexChanged={() => setIndexRevision(value => value + 1)} />
         <IndexSearch key={indexRevision} />
+        <HashOverflow key={indexRevision} />
       </div>
     </main>
   )
