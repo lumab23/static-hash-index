@@ -1,37 +1,53 @@
 import { useState } from 'react'
-import { searchByIndex } from '../index/searchApi.js'
-import { compareSearches } from './scanApi.js'
+import { compareSearches, searchByScan } from './scanApi.js'
 
 function ComparisonPanel() {
   const [key, setKey] = useState('')
+  const [scanResult, setScanResult] = useState(null)
   const [metrics, setMetrics] = useState(null)
   const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [loadingAction, setLoadingAction] = useState('')
 
-  async function handleCompare(event) {
-    event.preventDefault()
+  function normalizedKey() {
+    const value = key.trim()
+    if (!value) setError('Informe uma chave para buscar.')
+    return value
+  }
 
-    if (!key.trim()) {
-      setError('Informe uma chave para comparar.')
-      return
-    }
+  async function handleScan() {
+    const value = normalizedKey()
+    if (!value) return
 
-    setLoading(true)
+    setLoadingAction('scan')
     setError('')
     setMetrics(null)
+    setScanResult(null)
 
     try {
-      // 1. Chama a API da Luma (Busca Indexada)
-      const indexResult = await searchByIndex(key.trim())
-      
-      // 2. Chama a API da Bianca (Table Scan + Comparação)
-      const comparisonResult = await compareSearches(key.trim(), indexResult)
-      
-      setMetrics(comparisonResult)
+      setScanResult(await searchByScan(value))
     } catch (requestError) {
       setError(requestError.message)
     } finally {
-      setLoading(false)
+      setLoadingAction('')
+    }
+  }
+
+  async function handleCompare(event) {
+    event.preventDefault()
+    const value = normalizedKey()
+    if (!value) return
+
+    setLoadingAction('compare')
+    setError('')
+    setScanResult(null)
+    setMetrics(null)
+
+    try {
+      setMetrics(await compareSearches(value))
+    } catch (requestError) {
+      setError(requestError.message)
+    } finally {
+      setLoadingAction('')
     }
   }
 
@@ -44,7 +60,7 @@ function ComparisonPanel() {
         </p>
       </div>
 
-      <form className="flex gap-3" onSubmit={handleCompare}>
+      <form className="flex flex-col gap-3 sm:flex-row" onSubmit={handleCompare}>
         <input
           className="min-w-0 flex-1 rounded-lg border border-slate-700 bg-slate-950 px-4 py-2 outline-none focus:border-purple-400"
           onChange={(event) => setKey(event.target.value)}
@@ -52,15 +68,36 @@ function ComparisonPanel() {
           value={key}
         />
         <button
+          className="rounded-lg border border-purple-400 px-4 py-2 font-medium text-purple-300 disabled:opacity-50"
+          disabled={Boolean(loadingAction)}
+          onClick={handleScan}
+          type="button"
+        >
+          {loadingAction === 'scan' ? 'Executando...' : 'Executar table scan'}
+        </button>
+        <button
           className="rounded-lg bg-purple-500 px-4 py-2 font-medium text-slate-50 hover:bg-purple-400 disabled:opacity-50 transition-colors"
-          disabled={loading}
+          disabled={Boolean(loadingAction)}
           type="submit"
         >
-          {loading ? 'Executando...' : 'Comparar Custo'}
+          {loadingAction === 'compare' ? 'Comparando...' : 'Comparar custos'}
         </button>
       </form>
 
-      {error && <p className="text-sm text-red-400">{error}</p>}
+      {error && <p className="text-sm text-red-400" role="alert">{error}</p>}
+
+      {scanResult && (
+        <div aria-live="polite" className="space-y-3 rounded-xl border border-purple-400/30 bg-slate-950 p-4">
+          <h3 className="font-medium text-purple-300">Resultado do table scan</h3>
+          <div className="grid gap-2 sm:grid-cols-3">
+            <MetricCard label="Resultado" value={scanResult.found ? 'Encontrada' : 'Não encontrada'} />
+            <MetricCard label="Página" value={scanResult.page_id ?? '-'} />
+            <MetricCard label="Páginas lidas" value={scanResult.pages_read} highlightColor="purple" />
+          </div>
+          <p className="text-xs text-slate-400">Tempo: {(scanResult.elapsed_time * 1000).toFixed(4)} ms</p>
+          <p className="text-xs italic text-slate-500">{scanResult.trace}</p>
+        </div>
+      )}
 
       {metrics && (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -71,6 +108,7 @@ function ComparisonPanel() {
             <div className="space-y-4 rounded-xl border border-slate-700 bg-slate-950 p-4">
               <h3 className="font-medium text-cyan-400 text-center">Busca Indexada (Luma)</h3>
               <div className="grid gap-2 grid-cols-2">
+                <MetricCard label="Resultado" value={metrics.index_search.found ? 'Encontrada' : 'Não encontrada'} />
                 <MetricCard label="Página Acessada" value={metrics.index_search.page_id ?? '-'} />
                 <MetricCard label="Páginas Lidas" value={metrics.index_search.pages_read} highlightColor="cyan" />
               </div>
@@ -83,6 +121,7 @@ function ComparisonPanel() {
             <div className="space-y-4 rounded-xl border border-slate-700 bg-slate-950 p-4">
               <h3 className="font-medium text-purple-400 text-center">Table Scan (Bianca)</h3>
               <div className="grid gap-2 grid-cols-2">
+                <MetricCard label="Resultado" value={metrics.table_scan.found ? 'Encontrada' : 'Não encontrada'} />
                 <MetricCard label="Página Encontrada" value={metrics.table_scan.page_id ?? '-'} />
                 <MetricCard label="Páginas Lidas" value={metrics.table_scan.pages_read} highlightColor="purple" />
               </div>
@@ -96,14 +135,18 @@ function ComparisonPanel() {
           {/* Resumo Final de Economia */}
           <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-5 text-center">
             <h3 className="text-lg font-semibold text-emerald-400 mb-4">Vantagem do Índice Hash</h3>
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <div>
                 <p className="text-xs uppercase text-emerald-400/70">Páginas Economizadas</p>
-                <p className="text-2xl font-bold text-emerald-400">+{metrics.pages_saved}</p>
+                <p className="text-2xl font-bold text-emerald-400">{metrics.pages_saved} ({metrics.page_savings_percentage.toFixed(2)}%)</p>
               </div>
               <div>
                 <p className="text-xs uppercase text-emerald-400/70">Diferença de Tempo</p>
                 <p className="text-2xl font-bold text-emerald-400">{(metrics.time_difference_seconds * 1000).toFixed(2)} ms</p>
+              </div>
+              <div>
+                <p className="text-xs uppercase text-emerald-400/70">Diferença percentual</p>
+                <p className="text-2xl font-bold text-emerald-400">{metrics.time_savings_percentage.toFixed(2)}%</p>
               </div>
               <div>
                 <p className="text-xs uppercase text-emerald-400/70">Fator de Aceleração</p>
@@ -111,6 +154,10 @@ function ComparisonPanel() {
               </div>
             </div>
           </div>
+
+          {!metrics.results_agree && (
+            <p className="text-sm text-red-300" role="alert">As estratégias produziram resultados diferentes. Reconstrua o índice antes de comparar.</p>
+          )}
           
           <div className="text-xs text-slate-500 text-center italic">
             Trace do Scan: {metrics.table_scan.trace}

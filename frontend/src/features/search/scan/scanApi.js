@@ -14,14 +14,11 @@ export async function searchByScan(key) {
   return body
 }
 
-export async function compareSearches(key, indexSearchResult) {
+export async function compareSearches(key) {
   const response = await fetch('/api/search/compare', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ 
-      key, 
-      index_search_result: indexSearchResult 
-    }),
+    body: JSON.stringify({ key }),
   })
 
   const body = await response.json()

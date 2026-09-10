@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, field_validator
 
 from app.api.routes.data import get_page_manager
+from app.api.routes.index_search import get_hash_index
 from app.core.metrics import (
     ComparisonMetrics,
     TableScanResult,
@@ -9,17 +10,29 @@ from app.core.metrics import (
     execute_table_scan,
 )
 from app.core.pages import PageManager
+from app.core.search import search_by_index
 
 router = APIRouter(tags=["search"])
 
 
-class ScanRequest(BaseModel):
-    key: str = Field(..., min_length=1, description="Chave/palavra a ser buscada")
+class SearchRequest(BaseModel):
+    key: str
+
+    @field_validator("key")
+    @classmethod
+    def validate_key(cls, key: str) -> str:
+        key = key.strip()
+        if not key:
+            raise ValueError("Informe uma chave de busca.")
+        return key
 
 
-class CompareRequest(BaseModel):
-    key: str = Field(..., min_length=1, description="Chave/palavra a ser buscada")
-    index_search_result: dict = Field(..., description="Resultado retornado da busca indexada (Luma)")
+class ScanRequest(SearchRequest):
+    pass
+
+
+class CompareRequest(SearchRequest):
+    pass
 
 
 @router.post("/search/scan", response_model=TableScanResult, status_code=status.HTTP_200_OK)
@@ -41,5 +54,6 @@ def run_comparison(
     """
     Consolida e compara os resultados do Table Scan com a Busca Indexada da Luma.
     """
+    index_result = search_by_index(payload.key, get_hash_index(), page_manager)
     scan_result = execute_table_scan(page_manager.pages, payload.key)
-    return compare_search_methods(scan_result, payload.index_search_result)
+    return compare_search_methods(scan_result, index_result.to_dict())
