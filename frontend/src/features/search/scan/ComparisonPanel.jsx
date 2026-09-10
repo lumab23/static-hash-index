@@ -117,7 +117,6 @@ function ComparisonPanel() {
               </p>
             </div>
 
-            {/* Lado Direito: Table Scan (Sua parte) */}
             <div className="space-y-4 rounded-xl border border-slate-700 bg-slate-950 p-4">
               <h3 className="font-medium text-purple-400 text-center">Table Scan (Bianca)</h3>
               <div className="grid gap-2 grid-cols-2">
