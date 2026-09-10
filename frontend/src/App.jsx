@@ -3,6 +3,7 @@ import { useState } from 'react'
 import IndexPanel from './features/index/IndexPanel.jsx'
 import HashOverflow from './features/hash/HashOverflow.jsx'
 import IndexSearch from './features/search/index/IndexSearch.jsx'
+import ComparisonPanel from './features/search/scan/ComparisonPanel.jsx'
 
 function App() {
   const [indexRevision, setIndexRevision] = useState(0)
@@ -13,6 +14,7 @@ function App() {
         <IndexPanel onIndexChanged={() => setIndexRevision(value => value + 1)} />
         <IndexSearch key={indexRevision} />
         <HashOverflow key={indexRevision} />
+        <ComparisonPanel key={indexRevision} />
       </div>
     </main>
   )

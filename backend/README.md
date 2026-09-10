@@ -77,3 +77,22 @@ As métricas são globais e reiniciadas a cada construção:
 O valor de hash exibido é o próprio endereço `bucket_id`, calculado pela
 `hash_function.py` existente. No frontend, construa o índice no painel existente
 e use “Consultar hash”; uma reconstrução limpa a consulta anterior.
+
+### Table scan e comparação
+
+`POST /api/search/scan` percorre as páginas em ordem e recebe apenas `key`.
+`POST /api/search/compare` também recebe somente `key` e executa no backend a
+busca indexada e o table scan sobre o mesmo conjunto de páginas. Assim, a
+comparação não aceita métricas fornecidas pelo navegador.
+
+As métricas de comparação seguem estas convenções:
+
+- `pages_saved`: páginas lidas pelo scan menos páginas lidas pelo índice, com
+  mínimo zero.
+- `page_savings_percentage`: `pages_saved / pages_read_scan * 100`.
+- `time_difference_seconds`: tempo do scan menos tempo da busca indexada.
+- `time_savings_percentage`: diferença de tempo dividida pelo tempo do scan,
+  multiplicada por 100; pode ser negativa quando o índice for mais lento.
+- `speedup_factor`: tempo do scan dividido pelo tempo da busca indexada.
+- `results_agree`: informa se as duas estratégias concordam sobre a existência
+  da chave.
